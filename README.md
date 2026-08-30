@@ -1,16 +1,16 @@
-# cursor_remote
+# CursorRemote (Android)
 
-A new Flutter project.
+Клиент CursorRemote для телефона. Подключение по `CR-XXXX-XXXX:ключ`.
 
-## Getting Started
+Продукт: https://github.com/thekingoffamily/CursorRemote
 
-This project is a starting point for a Flutter application.
+```
+flutter pub get
+flutter test
+flutter build apk --release
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Лицензия
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Брать можно. Обязательна ссылка на https://github.com/thekingoffamily/cursor-remote-android  
+Текст: [LICENSE](LICENSE)
