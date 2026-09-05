@@ -14,7 +14,7 @@ const String kMasterHttp = String.fromEnvironment(
 );
 
 /// Baked into the UI so we can see which APK is actually installed.
-const String kAppVersion = '1.1.0';
+const String kAppVersion = '1.1.1';
 
 String masterWsBase() {
   if (kMasterHttp.startsWith('https://')) {
@@ -303,6 +303,7 @@ class LicenseCardData {
     this.folderName = 'Cursor',
     this.status = 'unknown',
     this.online = false,
+    this.cursorKeyOk = false,
   });
 
   final String serverId;
@@ -310,6 +311,7 @@ class LicenseCardData {
   String folderName;
   String status;
   bool online;
+  bool cursorKeyOk;
 
   Map<String, dynamic> toJson() => {
         'serverId': serverId,
@@ -363,6 +365,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         } else if (r.statusCode == 404) {
           c.status = 'invalid';
           c.online = false;
+        }
+      } catch (_) {}
+      try {
+        final uri = Uri.parse('$kMasterHttp/api/client/key_status/${c.serverId}')
+            .replace(queryParameters: {'ct': c.clientToken});
+        final r = await http.get(uri).timeout(const Duration(seconds: 20));
+        if (r.statusCode == 200) {
+          final j = jsonDecode(r.body) as Map<String, dynamic>;
+          c.cursorKeyOk = j['sdk'] == true;
         }
       } catch (_) {}
     }
@@ -455,6 +466,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       } catch (_) {}
       final fine = j['ok'] == true;
       final detail = (j['detail'] as String?) ?? (j['error'] as String?) ?? '';
+      if (fine) {
+        setState(() => card.cursorKeyOk = true);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -578,8 +592,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               OutlinedButton.icon(
                                 onPressed: () => _setCursorKey(c),
-                                icon: const Icon(Icons.vpn_key_outlined, size: 18),
-                                label: const Text('Ключ Cursor'),
+                                icon: Icon(
+                                  Icons.vpn_key_outlined,
+                                  size: 18,
+                                  color: c.cursorKeyOk ? const Color(0xFF3DDC84) : null,
+                                ),
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('Ключ Cursor'),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      width: 9,
+                                      height: 9,
+                                      decoration: BoxDecoration(
+                                        color: c.cursorKeyOk
+                                            ? const Color(0xFF3DDC84)
+                                            : const Color(0xFF7A8598),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               FilledButton.icon(
                                 onPressed: () => _openSession(c),
