@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'chat_screen.dart';
 
@@ -568,9 +567,6 @@ class ProjectsScreen extends StatefulWidget {
 }
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
-  WebSocketChannel? _ch;
-  StreamSubscription? _sub;
-  bool _closing = false;
   bool _loading = true;
   String? _error;
   List<ProjectInfo> _projects = [];
@@ -581,122 +577,55 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     _connect();
   }
 
-  void _connect() {
-    _sub?.cancel();
-    try {
-      _ch?.sink.close();
-    } catch (_) {}
-    _closing = false;
+  Future<void> _connect() async {
     setState(() {
       _error = null;
       _loading = true;
       _projects = [];
     });
-    final uri = Uri.parse(clientWsUri(widget.serverId, widget.clientToken));
+    final uri = Uri.parse('$kMasterHttp/api/client/projects/${widget.serverId}')
+        .replace(queryParameters: {'ct': widget.clientToken});
     try {
-      _ch = WebSocketChannel.connect(uri);
-      _sub = _ch!.stream.listen(
-        (event) {
-          final Map<String, dynamic> j;
-          try {
-            final String rawText;
-            if (event is String) {
-              rawText = event;
-            } else if (event is List<int>) {
-              rawText = utf8.decode(event);
-            } else {
-              return;
-            }
-            final decoded = jsonDecode(rawText);
-            if (decoded is! Map) return;
-            j = Map<String, dynamic>.from(decoded);
-          } catch (_) {
-            // JPEG leftover from the old screen-share path — ignore
-            return;
-          }
-          final t = j['type'];
-          if (t == 'denied') {
-            setState(() {
-              _loading = false;
-              _error = 'Лицензия: ${j['status']}';
-            });
-          } else if (t == 'error') {
-            setState(() {
-              _loading = false;
-              _error = '${j['detail']}';
-            });
-          } else if (t == 'relay' && j['agent_online'] == false) {
-            setState(() {
-              _loading = false;
-              _error = 'Агент оффлайн. Проверьте иконку в трее ПК.';
-            });
-          } else if (t == 'relay' && j['agent_online'] == true) {
-            setState(() {
-              _error = null;
-              _loading = true;
-            });
-            _send({'type': 'projects'});
-          } else if (t == 'projects') {
-            final raw = j['projects'];
-            final err = j['error'] as String?;
-            setState(() {
-              _loading = false;
-              _error = (err != null && err.isNotEmpty) ? err : null;
-              if (raw is List) {
-                _projects = raw
-                    .whereType<Map>()
-                    .map((e) => ProjectInfo.fromJson(Map<String, dynamic>.from(e)))
-                    .where((p) => p.id.isNotEmpty)
-                    .toList();
-              }
-            });
-          }
-        },
-        onError: (e) {
-          if (!_closing && mounted) {
-            setState(() {
-              _loading = false;
-              _error = 'Ошибка связи: $e';
-            });
-          }
-        },
-        onDone: () {
-          if (!_closing && mounted && _projects.isEmpty) {
-            setState(() {
-              _loading = false;
-              _error = 'Нет связи с Master. Проверьте интернет и агент.';
-            });
-          }
-        },
-      );
-      Future.delayed(const Duration(milliseconds: 400), () {
-        if (!_closing) _send({'type': 'projects'});
-      });
-      Future.delayed(const Duration(seconds: 15), () {
-        if (!_closing && mounted && _loading && _projects.isEmpty) {
-          setState(() {
-            _loading = false;
-            _error =
-                'ПК не ответил. На компьютере закройте старый агент в трее '
-                'и запустите новый из папки CursorRemote/agent.';
-          });
+      final r = await http.get(uri).timeout(const Duration(seconds: 50));
+      if (!mounted) return;
+      if (r.statusCode == 403) {
+        setState(() {
+          _loading = false;
+          _error = 'Лицензия недействительна';
+        });
+        return;
+      }
+      if (r.statusCode != 200) {
+        setState(() {
+          _loading = false;
+          _error = 'Сервер: ${r.statusCode}';
+        });
+        return;
+      }
+      final j = jsonDecode(r.body) as Map<String, dynamic>;
+      final raw = j['projects'];
+      final err = (j['error'] as String?) ?? '';
+      setState(() {
+        _loading = false;
+        _error = err.isEmpty ? null : err;
+        if (raw is List) {
+          _projects = raw
+              .whereType<Map>()
+              .map((e) => ProjectInfo.fromJson(Map<String, dynamic>.from(e)))
+              .where((p) => p.id.isNotEmpty)
+              .toList();
         }
       });
     } catch (e) {
-      setState(() => _error = 'Не удалось подключиться: $e');
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Нет связи: $e';
+      });
     }
   }
 
-  void _send(Map<String, dynamic> msg) => _ch?.sink.add(jsonEncode(msg));
-
   Future<void> _openProject(ProjectInfo p) async {
-    _closing = true;
-    await _sub?.cancel();
-    try {
-      await _ch?.sink.close();
-    } catch (_) {}
-    _ch = null;
-    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChatScreen(
@@ -707,14 +636,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       ),
     );
     if (mounted) _connect();
-  }
-
-  @override
-  void dispose() {
-    _closing = true;
-    _sub?.cancel();
-    _ch?.sink.close();
-    super.dispose();
   }
 
   @override

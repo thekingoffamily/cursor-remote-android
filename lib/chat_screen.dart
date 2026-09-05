@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:http/http.dart' as http;
 
 import 'main.dart';
 
@@ -44,148 +44,76 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scroll = ScrollController();
   final _rng = Random();
 
-  WebSocketChannel? _ch;
-  StreamSubscription? _sub;
   Timer? _timeout;
 
   final List<ChatMsg> _messages = [];
   String? _pendingReqId;
   String? _banner;
   bool _connected = false;
-  bool _closing = false;
 
   bool get _busy => _pendingReqId != null;
 
   @override
   void initState() {
     super.initState();
-    _connect();
+    _loadHistory();
   }
 
   @override
   void dispose() {
-    _closing = true;
     _timeout?.cancel();
-    _sub?.cancel();
-    _ch?.sink.close();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
-  void _connect() {
-    _sub?.cancel();
-    try {
-      _ch?.sink.close();
-    } catch (_) {}
-    _closing = false;
-    setState(() {
-      _connected = false;
-      _banner = null;
-    });
-
-    final uri = Uri.parse(clientWsUri(widget.serverId, widget.clientToken));
-    try {
-      _ch = WebSocketChannel.connect(uri);
-      _sub = _ch!.stream.listen(
-        _onEvent,
-        onError: (e) {
-          if (!_closing && mounted) {
-            setState(() {
-              _connected = false;
-              _banner = 'Ошибка связи: $e';
-            });
-          }
-        },
-        onDone: () {
-          if (!_closing && mounted) {
-            setState(() {
-              _connected = false;
-              _banner ??= 'Связь разорвана';
-            });
-            // a dropped socket will never deliver the answer we are waiting for
-            _failPending('Связь разорвана — ответ не дошёл');
-          }
-        },
-      );
-      Future.delayed(const Duration(milliseconds: 400), () {
-        if (!_closing) _requestHistory();
-      });
-    } catch (e) {
-      setState(() => _banner = 'Не удалось подключиться: $e');
-    }
+  Uri _api(String path, [Map<String, String>? extra]) {
+    return Uri.parse('$kMasterHttp$path').replace(
+      queryParameters: {'ct': widget.clientToken, ...?extra},
+    );
   }
 
-  void _send(Map<String, dynamic> msg) => _ch?.sink.add(jsonEncode(msg));
-
-  void _requestHistory() =>
-      _send({'type': 'history', 'project_id': widget.project.id});
-
-  void _onEvent(dynamic event) {
-    final String rawText;
-    if (event is String) {
-      rawText = event;
-    } else if (event is List<int>) {
-      rawText = utf8.decode(event);
-    } else {
-      return;
-    }
-    final Map<String, dynamic> j;
+  Future<void> _loadHistory() async {
+    setState(() => _banner = null);
+    final uri = _api(
+      '/api/client/history/${widget.serverId}',
+      {'project_id': widget.project.id},
+    );
     try {
-      j = jsonDecode(rawText) as Map<String, dynamic>;
-    } catch (_) {
-      return;
-    }
-    final t = j['type'];
-
-    if (t == 'denied') {
-      setState(() => _banner = 'Лицензия: ${j['status']}');
-      _failPending('Лицензия недействительна');
-    } else if (t == 'error') {
-      setState(() => _banner = '${j['detail']}');
-    } else if (t == 'relay') {
-      final online = j['agent_online'] == true;
-      setState(() {
-        _connected = online;
-        _banner = online ? null : 'Агент на ПК оффлайн. Проверьте иконку в трее.';
-      });
-      if (online && _messages.isEmpty) _requestHistory();
-    } else if (t == 'history') {
-      if (j['project_id'] != widget.project.id) return;
-      final raw = j['messages'];
-      if (raw is! List) return;
-      setState(() {
-        _connected = true;
-        _messages
-          ..clear()
-          ..addAll(raw.whereType<Map>().map((e) {
-            final m = Map<String, dynamic>.from(e);
-            return ChatMsg((m['role'] as String?) ?? 'assistant',
-                (m['content'] as String?) ?? '');
-          }).where((m) => m.text.isNotEmpty));
-      });
-      _scrollToEnd();
-    } else if (t == 'chat_reply') {
-      // ignore answers to a prompt we already gave up on, or to another phone's
-      if (j['req_id'] != _pendingReqId) return;
-      _timeout?.cancel();
+      final r = await http.get(uri).timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+      if (r.statusCode != 200) {
+        setState(() {
+          _connected = false;
+          _banner = 'История: ${r.statusCode}';
+        });
+        return;
+      }
+      final j = jsonDecode(r.body) as Map<String, dynamic>;
       final err = (j['error'] as String?) ?? '';
-      final text = (j['text'] as String?) ?? '';
+      final raw = j['messages'];
       setState(() {
-        _pendingReqId = null;
-        _connected = true;
-        final last = _messages.isNotEmpty ? _messages.last : null;
-        if (last != null && last.pending) {
-          last.pending = false;
-          if (err.isNotEmpty) {
-            last.failed = true;
-            last.text = err;
-          } else {
-            last.text = text.isEmpty ? '(пустой ответ)' : text;
-          }
+        _connected = err.isEmpty;
+        _banner = err.isEmpty ? null : err;
+        if (raw is List) {
+          _messages
+            ..clear()
+            ..addAll(raw.whereType<Map>().map((e) {
+              final m = Map<String, dynamic>.from(e);
+              return ChatMsg(
+                (m['role'] as String?) ?? 'assistant',
+                (m['content'] as String?) ?? '',
+              );
+            }).where((m) => m.text.isNotEmpty));
         }
       });
       _scrollToEnd();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _connected = false;
+        _banner = 'Нет связи: $e';
+      });
     }
   }
 
@@ -206,7 +134,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String _newReqId() =>
       '${DateTime.now().millisecondsSinceEpoch}-${_rng.nextInt(1 << 20)}';
 
-  void _submit() {
+  Future<void> _submit() async {
     final text = _input.text.trim();
     if (text.isEmpty || _busy) return;
     final reqId = _newReqId();
@@ -220,22 +148,57 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _scrollToEnd();
 
-    _send({
-      'type': 'chat',
-      'req_id': reqId,
-      'project_id': p.id,
-      'path': p.path,
-      'name': p.name,
-      'kind': p.kind,
-      'host': p.host,
-      'user': p.user,
-      'remote_path': p.remotePath,
-      'text': text,
-    });
-
     _timeout = Timer(kReplyTimeout, () {
       _failPending('Агент не ответил за ${kReplyTimeout.inMinutes} мин');
     });
+
+    final uri = _api('/api/client/chat/${widget.serverId}');
+    try {
+      final r = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'req_id': reqId,
+              'project_id': p.id,
+              'path': p.path,
+              'name': p.name,
+              'kind': p.kind,
+              'host': p.host,
+              'user': p.user,
+              'remote_path': p.remotePath,
+              'text': text,
+            }),
+          )
+          .timeout(kReplyTimeout);
+      if (!mounted || _pendingReqId != reqId) return;
+      _timeout?.cancel();
+      Map<String, dynamic> j = {};
+      try {
+        j = jsonDecode(r.body) as Map<String, dynamic>;
+      } catch (_) {}
+      final err = (j['error'] as String?) ??
+          (r.statusCode == 200 ? '' : 'Сервер: ${r.statusCode}');
+      final answer = (j['text'] as String?) ?? '';
+      setState(() {
+        _pendingReqId = null;
+        _connected = err.isEmpty;
+        final last = _messages.isNotEmpty ? _messages.last : null;
+        if (last != null && last.pending) {
+          last.pending = false;
+          if (err.isNotEmpty) {
+            last.failed = true;
+            last.text = err;
+          } else {
+            last.text = answer.isEmpty ? '(пустой ответ)' : answer;
+          }
+        }
+      });
+      _scrollToEnd();
+    } catch (e) {
+      if (!mounted || _pendingReqId != reqId) return;
+      _failPending('$e');
+    }
   }
 
   void _scrollToEnd() {
@@ -267,7 +230,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     title: Text(_banner!,
                         style: const TextStyle(color: Colors.white, fontSize: 13)),
                     trailing: TextButton(
-                      onPressed: _connect,
+                      onPressed: _loadHistory,
                       child: const Text('Повтор'),
                     ),
                   ),
