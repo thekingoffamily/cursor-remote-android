@@ -1,12 +1,13 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+import 'chat_screen.dart';
 
 const String kMasterHttp = String.fromEnvironment(
   'MASTER_URL',
@@ -117,7 +118,7 @@ class _BootScreenState extends State<BootScreen> {
       if (decoded is List) {
         for (final e in decoded) {
           if (e is String) {
-            // legacy: ID only — force re-pair
+            // legacy: ID only вЂ” force re-pair
             continue;
           }
           if (e is Map) {
@@ -150,8 +151,8 @@ class _BootScreenState extends State<BootScreen> {
   }
 }
 
-class _Bg extends StatelessWidget {
-  const _Bg({required this.child});
+class Bg extends StatelessWidget {
+  const Bg({super.key, required this.child});
   final Widget child;
 
   @override
@@ -185,7 +186,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
   Future<void> _saveAndGo() async {
     final parsed = parseConnectionCode(_controller.text);
     if (parsed == null) {
-      setState(() => _error = 'Вставьте полный код: CR-XXXX-XXXX:ключ (из трея ПК)');
+      setState(() => _error = 'Р’СЃС‚Р°РІСЊС‚Рµ РїРѕР»РЅС‹Р№ РєРѕРґ: CR-XXXX-XXXX:РєР»СЋС‡ (РёР· С‚СЂРµСЏ РџРљ)');
       return;
     }
     setState(() {
@@ -206,7 +207,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _Bg(
+      body: Bg(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -231,7 +232,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Вставьте код подключения с ПК\n(трей → Скопировать код подключения).',
+                  'Р’СЃС‚Р°РІСЊС‚Рµ РєРѕРґ РїРѕРґРєР»СЋС‡РµРЅРёСЏ СЃ РџРљ\n(С‚СЂРµР№ в†’ РЎРєРѕРїРёСЂРѕРІР°С‚СЊ РєРѕРґ РїРѕРґРєР»СЋС‡РµРЅРёСЏ).',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.72),
@@ -244,8 +245,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                   controller: _controller,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   decoration: const InputDecoration(
-                    labelText: 'Код подключения',
-                    hintText: 'CR-XXXX-XXXX:ключ',
+                    labelText: 'РљРѕРґ РїРѕРґРєР»СЋС‡РµРЅРёСЏ',
+                    hintText: 'CR-XXXX-XXXX:РєР»СЋС‡',
                   ),
                   onSubmitted: (_) => _saveAndGo(),
                 ),
@@ -268,7 +269,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Text(
-                            'Подключиться',
+                            'РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                           ),
                   ),
@@ -364,13 +365,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Добавить ПК'),
+        title: const Text('Р”РѕР±Р°РІРёС‚СЊ РџРљ'),
         content: TextField(
           controller: ctrl,
-          decoration: const InputDecoration(hintText: 'CR-XXXX-XXXX:ключ'),
+          decoration: const InputDecoration(hintText: 'CR-XXXX-XXXX:РєР»СЋС‡'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('РћС‚РјРµРЅР°')),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('OK')),
         ],
       ),
@@ -393,8 +394,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SnackBar(
           content: Text(
             card.status == 'invalid'
-                ? 'Неверный код. Скопируйте новый из трея агента.'
-                : 'Подписка истекла. Оплатите в Telegram-боте.',
+                ? 'РќРµРІРµСЂРЅС‹Р№ РєРѕРґ. РЎРєРѕРїРёСЂСѓР№С‚Рµ РЅРѕРІС‹Р№ РёР· С‚СЂРµСЏ Р°РіРµРЅС‚Р°.'
+                : 'РџРѕРґРїРёСЃРєР° РёСЃС‚РµРєР»Р°. РћРїР»Р°С‚РёС‚Рµ РІ Telegram-Р±РѕС‚Рµ.',
           ),
         ),
       );
@@ -410,13 +411,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _statusRu(String s) {
     switch (s) {
       case 'trial':
-        return 'триал';
+        return 'С‚СЂРёР°Р»';
       case 'active':
-        return 'активна';
+        return 'Р°РєС‚РёРІРЅР°';
       case 'expired':
-        return 'истекла';
+        return 'РёСЃС‚РµРєР»Р°';
       case 'invalid':
-        return 'неверный код';
+        return 'РЅРµРІРµСЂРЅС‹Р№ РєРѕРґ';
       default:
         return s;
     }
@@ -425,7 +426,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _Bg(
+      body: Bg(
         child: SafeArea(
           child: Column(
             children: [
@@ -465,7 +466,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Лицензия #${i + 1}',
+                            'Р›РёС†РµРЅР·РёСЏ #${i + 1}',
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -483,14 +484,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${_statusRu(c.status)}${c.online ? ' · онлайн' : ' · оффлайн'}',
+                            '${_statusRu(c.status)}${c.online ? ' В· РѕРЅР»Р°Р№РЅ' : ' В· РѕС„С„Р»Р°Р№РЅ'}',
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.65)),
                           ),
                           const SizedBox(height: 14),
                           FilledButton.icon(
                             onPressed: () => _openSession(c),
                             icon: Icon(c.status == 'expired' ? Icons.payments : Icons.play_arrow),
-                            label: Text(c.status == 'expired' ? 'Продлить' : 'Подключиться'),
+                            label: Text(c.status == 'expired' ? 'РџСЂРѕРґР»РёС‚СЊ' : 'РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ'),
                           ),
                         ],
                       ),
@@ -505,7 +506,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addLicense,
         icon: const Icon(Icons.add),
-        label: const Text('Лицензия'),
+        label: const Text('Р›РёС†РµРЅР·РёСЏ'),
       ),
     );
   }
@@ -513,23 +514,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 class ProjectInfo {
   ProjectInfo({
-    required this.index,
-    required this.hwnd,
-    required this.folderName,
-    required this.title,
+    required this.id,
+    required this.name,
+    required this.kind,
+    required this.path,
+    required this.host,
+    required this.user,
+    required this.remotePath,
+    required this.open,
   });
 
-  final int index;
-  final int hwnd;
-  final String folderName;
-  final String title;
+  final String id;
+  final String name;
+  final String kind;
+  final String path;
+  final String host;
+  final String user;
+  final String remotePath;
+  final bool open;
+
+  bool get isSsh => kind == 'ssh';
+
+  String get subtitle {
+    if (isSsh) {
+      final who = user.isEmpty ? host : '$user@$host';
+      return remotePath.isEmpty ? who : '$who:$remotePath';
+    }
+    return path;
+  }
 
   factory ProjectInfo.fromJson(Map<String, dynamic> j) {
     return ProjectInfo(
-      index: (j['index'] as num?)?.toInt() ?? 0,
-      hwnd: (j['hwnd'] as num?)?.toInt() ?? 0,
-      folderName: (j['folder_name'] as String?) ?? 'Cursor',
-      title: (j['title'] as String?) ?? '',
+      id: (j['id'] as String?) ?? '',
+      name: (j['name'] as String?) ?? 'Cursor',
+      kind: (j['kind'] as String?) ?? 'local',
+      path: (j['path'] as String?) ?? '',
+      host: (j['host'] as String?) ?? '',
+      user: (j['user'] as String?) ?? '',
+      remotePath: (j['remote_path'] as String?) ?? '',
+      open: j['open'] == true,
     );
   }
 }
@@ -548,6 +571,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   WebSocketChannel? _ch;
   StreamSubscription? _sub;
   bool _closing = false;
+  bool _loading = true;
   String? _error;
   List<ProjectInfo> _projects = [];
 
@@ -565,6 +589,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     _closing = false;
     setState(() {
       _error = null;
+      _loading = true;
       _projects = [];
     });
     final uri = Uri.parse(clientWsUri(widget.serverId, widget.clientToken));
@@ -576,41 +601,44 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           final j = jsonDecode(event) as Map<String, dynamic>;
           final t = j['type'];
           if (t == 'denied') {
-            setState(() => _error = 'Лицензия: ${j['status']}');
+            setState(() => _error = 'Р›РёС†РµРЅР·РёСЏ: ${j['status']}');
           } else if (t == 'error') {
             setState(() => _error = '${j['detail']}');
           } else if (t == 'relay' && j['agent_online'] == false) {
-            setState(() => _error = 'Агент оффлайн. Проверьте иконку в трее ПК.');
+            setState(() => _error = 'РђРіРµРЅС‚ РѕС„С„Р»Р°Р№РЅ. РџСЂРѕРІРµСЂСЊС‚Рµ РёРєРѕРЅРєСѓ РІ С‚СЂРµРµ РџРљ.');
           } else if (t == 'relay' && j['agent_online'] == true) {
             setState(() => _error = null);
-            _send({'type': 'list'});
-          } else if (t == 'keepalive' || t == 'windows') {
-            final raw = j['windows'];
-            if (raw is List) {
-              setState(() {
+            _send({'type': 'projects'});
+          } else if (t == 'projects') {
+            final raw = j['projects'];
+            final err = j['error'] as String?;
+            setState(() {
+              _loading = false;
+              _error = (err != null && err.isNotEmpty) ? err : null;
+              if (raw is List) {
                 _projects = raw
                     .whereType<Map>()
                     .map((e) => ProjectInfo.fromJson(Map<String, dynamic>.from(e)))
+                    .where((p) => p.id.isNotEmpty)
                     .toList();
-                _error = null;
-              });
-            }
+              }
+            });
           }
         },
         onError: (e) {
-          if (!_closing && mounted) setState(() => _error = 'Ошибка связи: $e');
+          if (!_closing && mounted) setState(() => _error = 'РћС€РёР±РєР° СЃРІСЏР·Рё: $e');
         },
         onDone: () {
           if (!_closing && mounted && _projects.isEmpty) {
-            setState(() => _error = 'Нет связи с Master. Проверьте интернет и агент.');
+            setState(() => _error = 'РќРµС‚ СЃРІСЏР·Рё СЃ Master. РџСЂРѕРІРµСЂСЊС‚Рµ РёРЅС‚РµСЂРЅРµС‚ Рё Р°РіРµРЅС‚.');
           }
         },
       );
       Future.delayed(const Duration(milliseconds: 400), () {
-        if (!_closing) _send({'type': 'list'});
+        if (!_closing) _send({'type': 'projects'});
       });
     } catch (e) {
-      setState(() => _error = 'Не удалось подключиться: $e');
+      setState(() => _error = 'РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ: $e');
     }
   }
 
@@ -626,12 +654,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ProjectSessionScreen(
+        builder: (_) => ChatScreen(
           serverId: widget.serverId,
           clientToken: widget.clientToken,
-          projectIndex: p.index,
-          projectHwnd: p.hwnd,
-          folderName: p.folderName,
+          project: p,
         ),
       ),
     );
@@ -649,7 +675,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _Bg(
+      body: Bg(
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -664,7 +690,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     ),
                     const Expanded(
                       child: Text(
-                        'Проекты Cursor',
+                        'РџСЂРѕРµРєС‚С‹ Cursor',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -677,16 +703,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   color: const Color(0xFF3A1520),
                   child: ListTile(
                     title: Text(_error!, style: const TextStyle(color: Colors.white)),
-                    trailing: TextButton(onPressed: _connect, child: const Text('Повтор')),
+                    trailing: TextButton(onPressed: _connect, child: const Text('РџРѕРІС‚РѕСЂ')),
                   ),
                 ),
               Expanded(
                 child: _projects.isEmpty
                     ? Center(
                         child: Text(
-                          _error == null
-                              ? 'Ищем открытые окна Cursor…\nОткройте проект на ПК.'
-                              : '',
+                          _error != null
+                              ? ''
+                              : _loading
+                                  ? 'РС‰РµРј РїСЂРѕРµРєС‚С‹ Cursor РЅР° РџРљвЂ¦'
+                                  : 'РџСЂРѕРµРєС‚РѕРІ РЅРµ РЅР°С€Р»РѕСЃСЊ.\nРћС‚РєСЂРѕР№С‚Рµ РїР°РїРєСѓ РІ Cursor РЅР° РџРљ.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.65), height: 1.4),
                         ),
@@ -714,24 +742,46 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                         color: const Color(0xFF243044),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(Icons.folder_open, color: Color(0xFF4DA3FF)),
+                                      child: Icon(
+                                        p.isSsh ? Icons.dns_outlined : Icons.folder_open,
+                                        color: const Color(0xFF4DA3FF),
+                                      ),
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            p.folderName,
-                                            style: const TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w700,
-                                            ),
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  p.name,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontSize: 17,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (p.open) ...[
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  width: 8,
+                                                  height: 8,
+                                                  decoration: const BoxDecoration(
+                                                    color: Color(0xFF3DDC84),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
-                                          if (p.title.isNotEmpty) ...[
+                                          if (p.subtitle.isNotEmpty) ...[
                                             const SizedBox(height: 4),
                                             Text(
-                                              p.title,
+                                              p.subtitle,
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
@@ -760,315 +810,3 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 }
 
-class ProjectSessionScreen extends StatefulWidget {
-  const ProjectSessionScreen({
-    super.key,
-    required this.serverId,
-    required this.clientToken,
-    required this.projectIndex,
-    required this.projectHwnd,
-    required this.folderName,
-  });
-
-  final String serverId;
-  final String clientToken;
-  final int projectIndex;
-  final int projectHwnd;
-  final String folderName;
-
-  @override
-  State<ProjectSessionScreen> createState() => _ProjectSessionScreenState();
-}
-
-class _ProjectSessionScreenState extends State<ProjectSessionScreen> {
-  WebSocketChannel? _ch;
-  Uint8List? _frame;
-  String? _error;
-  StreamSubscription? _sub;
-  bool _closing = false;
-  bool _sending = false;
-  final _prompt = TextEditingController();
-  final _focus = FocusNode();
-
-  Map<String, dynamic> get _selectMsg => {
-        'type': 'select',
-        'index': widget.projectIndex,
-        'hwnd': widget.projectHwnd,
-        'folder_name': widget.folderName,
-      };
-
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _connect();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focus.requestFocus();
-    });
-  }
-
-  void _connect() {
-    _sub?.cancel();
-    try {
-      _ch?.sink.close();
-    } catch (_) {}
-    _closing = false;
-    setState(() {
-      _error = null;
-      _frame = null;
-    });
-    final uri = Uri.parse(clientWsUri(widget.serverId, widget.clientToken));
-    try {
-      _ch = WebSocketChannel.connect(uri);
-      _sub = _ch!.stream.listen(
-        (event) {
-          if (event is List<int>) {
-            setState(() {
-              _frame = Uint8List.fromList(event);
-              _error = null;
-            });
-          } else if (event is String) {
-            final j = jsonDecode(event) as Map<String, dynamic>;
-            if (j['type'] == 'denied') {
-              setState(() => _error = 'Лицензия: ${j['status']}');
-            } else if (j['type'] == 'error') {
-              setState(() => _error = '${j['detail']}');
-            } else if (j['type'] == 'relay' && j['agent_online'] == false) {
-              setState(() => _error = 'Агент оффлайн. Проверьте иконку в трее ПК.');
-            } else if (j['type'] == 'relay' && j['agent_online'] == true) {
-              setState(() => _error = null);
-              _send(_selectMsg);
-            }
-          }
-        },
-        onError: (e) {
-          if (!_closing && mounted) setState(() => _error = 'Ошибка связи: $e');
-        },
-        onDone: () {
-          if (!_closing && mounted && _frame == null) {
-            setState(() => _error = 'Нет связи с Master. Проверьте интернет и агент.');
-          }
-        },
-      );
-      Future.delayed(const Duration(milliseconds: 350), () {
-        if (!_closing) _send(_selectMsg);
-      });
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && !_closing) _focus.requestFocus();
-      });
-    } catch (e) {
-      setState(() => _error = 'Не удалось подключиться: $e');
-    }
-  }
-
-  void _send(Map<String, dynamic> msg) => _ch?.sink.add(jsonEncode(msg));
-
-  Future<void> _sendPrompt() async {
-    final text = _prompt.text.trim();
-    if (text.isEmpty || _sending) return;
-    if (_frame == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Подожди — ещё подключаемся к проекту…')),
-      );
-      return;
-    }
-    setState(() => _sending = true);
-    _send({
-      'type': 'prompt',
-      'text': text,
-      'hwnd': widget.projectHwnd,
-      'index': widget.projectIndex,
-      'folder_name': widget.folderName,
-    });
-    _prompt.clear();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Отправляю агенту на ПК…'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (mounted) {
-      setState(() => _sending = false);
-      _focus.requestFocus();
-    }
-  }
-
-  void _onTapDown(TapDownDetails d, BoxConstraints box) {
-    _send({
-      'type': 'tap',
-      'x': (d.localPosition.dx / box.maxWidth).clamp(0.0, 1.0),
-      'y': (d.localPosition.dy / box.maxHeight).clamp(0.0, 1.0),
-      'button': 'left',
-    });
-  }
-
-  void _onLongPress(LongPressStartDetails d, BoxConstraints box) {
-    _send({
-      'type': 'tap',
-      'x': (d.localPosition.dx / box.maxWidth).clamp(0.0, 1.0),
-      'y': (d.localPosition.dy / box.maxHeight).clamp(0.0, 1.0),
-      'button': 'right',
-    });
-  }
-
-  @override
-  void dispose() {
-    _closing = true;
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    _focus.dispose();
-    _prompt.dispose();
-    _sub?.cancel();
-    _ch?.sink.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Column(
-          children: [
-            if (_error != null)
-              Material(
-                color: const Color(0xFF3A1520),
-                child: ListTile(
-                  dense: true,
-                  title: Text(_error!, style: const TextStyle(color: Colors.white, fontSize: 13)),
-                  trailing: TextButton(onPressed: _connect, child: const Text('Повтор')),
-                ),
-              ),
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return ColoredBox(
-                          color: Colors.black,
-                          child: _frame == null
-                              ? Center(
-                                  child: Text(
-                                    'Подключаем чат ${widget.folderName}…',
-                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                                  ),
-                                )
-                              : GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTapDown: (d) => _onTapDown(d, constraints),
-                                  onLongPressStart: (d) => _onLongPress(d, constraints),
-                                  onVerticalDragUpdate: (d) {
-                                    if (d.primaryDelta == null) return;
-                                    _send({'type': 'scroll', 'dy': d.primaryDelta! > 0 ? -1 : 1});
-                                  },
-                                  child: InteractiveViewer(
-                                    minScale: 1,
-                                    maxScale: 4,
-                                    child: SizedBox(
-                                      width: constraints.maxWidth,
-                                      height: constraints.maxHeight,
-                                      child: Image.memory(
-                                        _frame!,
-                                        gaplessPlayback: true,
-                                        fit: BoxFit.contain,
-                                        alignment: Alignment.center,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                        );
-                      },
-                    ),
-                  ),
-                  Positioned(
-                    top: MediaQuery.paddingOf(context).top + 4,
-                    left: 4,
-                    child: Material(
-                      color: Colors.black54,
-                      shape: const CircleBorder(),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: MediaQuery.paddingOf(context).top + 8,
-                    right: 12,
-                    child: Material(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        child: Text(
-                          'чат Cursor',
-                          style: TextStyle(color: Colors.white70, fontSize: 11),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Material(
-              color: const Color(0xFF12151C),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _prompt,
-                          focusNode: _focus,
-                          autofocus: true,
-                          keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.newline,
-                          minLines: 1,
-                          maxLines: 5,
-                          decoration: const InputDecoration(
-                            hintText: 'Сообщение агенту…',
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: _sending ? null : _sendPrompt,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: _sending
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text(
-                                'Отправить\nагенту',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, height: 1.1),
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
