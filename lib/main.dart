@@ -14,7 +14,7 @@ const String kMasterHttp = String.fromEnvironment(
 );
 
 /// Baked into the UI so we can see which APK is actually installed.
-const String kAppVersion = '1.0.8';
+const String kAppVersion = '1.1.0';
 
 String masterWsBase() {
   if (kMasterHttp.startsWith('https://')) {
@@ -632,10 +632,14 @@ class ProjectInfo {
 
   String get subtitle {
     if (isSsh) {
-      final who = user.isEmpty ? host : '$user@$host';
-      return remotePath.isEmpty ? who : '$who:$remotePath';
+      return user.isEmpty ? host : '$user@$host';
     }
-    return path;
+    // short folder hint — never dump full disk paths into the list
+    if (path.isEmpty) return '';
+    final norm = path.replaceAll('\\', '/');
+    final parts = norm.split('/').where((e) => e.isNotEmpty).toList();
+    if (parts.length <= 2) return parts.join('/');
+    return '…/${parts[parts.length - 2]}/${parts.last}';
   }
 
   factory ProjectInfo.fromJson(Map<String, dynamic> j) {

@@ -1,7 +1,7 @@
 name: cursor_remote
 description: CursorRemote — remote control Cursor IDE from Android
 publish_to: "none"
-version: 1.0.8+9
+version: 1.1.0+10
 
 environment:
   sdk: ^3.7.2

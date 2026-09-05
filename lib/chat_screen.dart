@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import 'main.dart';
+import 'chat_md.dart';
 
 /// The PC agent may work for minutes on one prompt; give up only well after it does.
 const Duration kReplyTimeout = Duration(seconds: 330);
@@ -397,7 +398,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                 ),
                 Text(
-                  p.isSsh ? 'SSH · ${p.subtitle}' : 'ПК · ${p.subtitle}',
+                  p.isSsh
+                      ? (p.user.isEmpty ? 'SSH · ${p.host}' : 'SSH · ${p.user}@${p.host}')
+                      : 'ПК · ${p.name}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -472,13 +475,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   );
                 },
-                child: SelectableText(
+                child: chatMarkdown(
                   m.text,
-                  style: TextStyle(
+                  base: TextStyle(
                     fontSize: 14.5,
                     height: 1.45,
                     color: m.failed ? const Color(0xFFFF9AA8) : Colors.white,
                   ),
+                  codeBg: const Color(0xFF0B0E14),
                 ),
               ),
       ),
