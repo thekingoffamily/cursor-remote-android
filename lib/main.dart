@@ -118,7 +118,7 @@ class _BootScreenState extends State<BootScreen> {
       if (decoded is List) {
         for (final e in decoded) {
           if (e is String) {
-            // legacy: ID only вЂ” force re-pair
+            // legacy: ID only — force re-pair
             continue;
           }
           if (e is Map) {
@@ -186,7 +186,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
   Future<void> _saveAndGo() async {
     final parsed = parseConnectionCode(_controller.text);
     if (parsed == null) {
-      setState(() => _error = 'Р’СЃС‚Р°РІСЊС‚Рµ РїРѕР»РЅС‹Р№ РєРѕРґ: CR-XXXX-XXXX:РєР»СЋС‡ (РёР· С‚СЂРµСЏ РџРљ)');
+      setState(() => _error = 'Вставьте полный код: CR-XXXX-XXXX:ключ (из трея ПК)');
       return;
     }
     setState(() {
@@ -232,7 +232,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Р’СЃС‚Р°РІСЊС‚Рµ РєРѕРґ РїРѕРґРєР»СЋС‡РµРЅРёСЏ СЃ РџРљ\n(С‚СЂРµР№ в†’ РЎРєРѕРїРёСЂРѕРІР°С‚СЊ РєРѕРґ РїРѕРґРєР»СЋС‡РµРЅРёСЏ).',
+                  'Вставьте код подключения с ПК\n(трей → Скопировать код подключения).',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.72),
@@ -245,8 +245,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                   controller: _controller,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   decoration: const InputDecoration(
-                    labelText: 'РљРѕРґ РїРѕРґРєР»СЋС‡РµРЅРёСЏ',
-                    hintText: 'CR-XXXX-XXXX:РєР»СЋС‡',
+                    labelText: 'Код подключения',
+                    hintText: 'CR-XXXX-XXXX:ключ',
                   ),
                   onSubmitted: (_) => _saveAndGo(),
                 ),
@@ -269,7 +269,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Text(
-                            'РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ',
+                            'Подключиться',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                           ),
                   ),
@@ -365,13 +365,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Р”РѕР±Р°РІРёС‚СЊ РџРљ'),
+        title: const Text('Добавить ПК'),
         content: TextField(
           controller: ctrl,
-          decoration: const InputDecoration(hintText: 'CR-XXXX-XXXX:РєР»СЋС‡'),
+          decoration: const InputDecoration(hintText: 'CR-XXXX-XXXX:ключ'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('РћС‚РјРµРЅР°')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('OK')),
         ],
       ),
@@ -394,8 +394,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SnackBar(
           content: Text(
             card.status == 'invalid'
-                ? 'РќРµРІРµСЂРЅС‹Р№ РєРѕРґ. РЎРєРѕРїРёСЂСѓР№С‚Рµ РЅРѕРІС‹Р№ РёР· С‚СЂРµСЏ Р°РіРµРЅС‚Р°.'
-                : 'РџРѕРґРїРёСЃРєР° РёСЃС‚РµРєР»Р°. РћРїР»Р°С‚РёС‚Рµ РІ Telegram-Р±РѕС‚Рµ.',
+                ? 'Неверный код. Скопируйте новый из трея агента.'
+                : 'Подписка истекла. Оплатите в Telegram-боте.',
           ),
         ),
       );
@@ -411,13 +411,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _statusRu(String s) {
     switch (s) {
       case 'trial':
-        return 'С‚СЂРёР°Р»';
+        return 'триал';
       case 'active':
-        return 'Р°РєС‚РёРІРЅР°';
+        return 'активна';
       case 'expired':
-        return 'РёСЃС‚РµРєР»Р°';
+        return 'истекла';
       case 'invalid':
-        return 'РЅРµРІРµСЂРЅС‹Р№ РєРѕРґ';
+        return 'неверный код';
       default:
         return s;
     }
@@ -466,7 +466,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Р›РёС†РµРЅР·РёСЏ #${i + 1}',
+                            'Лицензия #${i + 1}',
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -484,14 +484,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${_statusRu(c.status)}${c.online ? ' В· РѕРЅР»Р°Р№РЅ' : ' В· РѕС„С„Р»Р°Р№РЅ'}',
+                            '${_statusRu(c.status)}${c.online ? ' · онлайн' : ' · оффлайн'}',
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.65)),
                           ),
                           const SizedBox(height: 14),
                           FilledButton.icon(
                             onPressed: () => _openSession(c),
                             icon: Icon(c.status == 'expired' ? Icons.payments : Icons.play_arrow),
-                            label: Text(c.status == 'expired' ? 'РџСЂРѕРґР»РёС‚СЊ' : 'РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ'),
+                            label: Text(c.status == 'expired' ? 'Продлить' : 'Подключиться'),
                           ),
                         ],
                       ),
@@ -506,7 +506,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addLicense,
         icon: const Icon(Icons.add),
-        label: const Text('Р›РёС†РµРЅР·РёСЏ'),
+        label: const Text('Лицензия'),
       ),
     );
   }
@@ -597,17 +597,36 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       _ch = WebSocketChannel.connect(uri);
       _sub = _ch!.stream.listen(
         (event) {
-          if (event is! String) return;
-          final j = jsonDecode(event) as Map<String, dynamic>;
+          final String rawText;
+          if (event is String) {
+            rawText = event;
+          } else if (event is List<int>) {
+            rawText = utf8.decode(event);
+          } else {
+            return;
+          }
+          final j = jsonDecode(rawText) as Map<String, dynamic>;
           final t = j['type'];
           if (t == 'denied') {
-            setState(() => _error = 'Р›РёС†РµРЅР·РёСЏ: ${j['status']}');
+            setState(() {
+              _loading = false;
+              _error = 'Лицензия: ${j['status']}';
+            });
           } else if (t == 'error') {
-            setState(() => _error = '${j['detail']}');
+            setState(() {
+              _loading = false;
+              _error = '${j['detail']}';
+            });
           } else if (t == 'relay' && j['agent_online'] == false) {
-            setState(() => _error = 'РђРіРµРЅС‚ РѕС„С„Р»Р°Р№РЅ. РџСЂРѕРІРµСЂСЊС‚Рµ РёРєРѕРЅРєСѓ РІ С‚СЂРµРµ РџРљ.');
+            setState(() {
+              _loading = false;
+              _error = 'Агент оффлайн. Проверьте иконку в трее ПК.';
+            });
           } else if (t == 'relay' && j['agent_online'] == true) {
-            setState(() => _error = null);
+            setState(() {
+              _error = null;
+              _loading = true;
+            });
             _send({'type': 'projects'});
           } else if (t == 'projects') {
             final raw = j['projects'];
@@ -626,19 +645,37 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           }
         },
         onError: (e) {
-          if (!_closing && mounted) setState(() => _error = 'РћС€РёР±РєР° СЃРІСЏР·Рё: $e');
+          if (!_closing && mounted) {
+            setState(() {
+              _loading = false;
+              _error = 'Ошибка связи: $e';
+            });
+          }
         },
         onDone: () {
           if (!_closing && mounted && _projects.isEmpty) {
-            setState(() => _error = 'РќРµС‚ СЃРІСЏР·Рё СЃ Master. РџСЂРѕРІРµСЂСЊС‚Рµ РёРЅС‚РµСЂРЅРµС‚ Рё Р°РіРµРЅС‚.');
+            setState(() {
+              _loading = false;
+              _error = 'Нет связи с Master. Проверьте интернет и агент.';
+            });
           }
         },
       );
       Future.delayed(const Duration(milliseconds: 400), () {
         if (!_closing) _send({'type': 'projects'});
       });
+      Future.delayed(const Duration(seconds: 15), () {
+        if (!_closing && mounted && _loading && _projects.isEmpty) {
+          setState(() {
+            _loading = false;
+            _error =
+                'ПК не ответил. На компьютере закройте старый агент в трее '
+                'и запустите новый из папки CursorRemote/agent.';
+          });
+        }
+      });
     } catch (e) {
-      setState(() => _error = 'РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ: $e');
+      setState(() => _error = 'Не удалось подключиться: $e');
     }
   }
 
@@ -690,7 +727,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     ),
                     const Expanded(
                       child: Text(
-                        'РџСЂРѕРµРєС‚С‹ Cursor',
+                        'Проекты Cursor',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -703,7 +740,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   color: const Color(0xFF3A1520),
                   child: ListTile(
                     title: Text(_error!, style: const TextStyle(color: Colors.white)),
-                    trailing: TextButton(onPressed: _connect, child: const Text('РџРѕРІС‚РѕСЂ')),
+                    trailing: TextButton(onPressed: _connect, child: const Text('Повтор')),
                   ),
                 ),
               Expanded(
@@ -713,8 +750,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           _error != null
                               ? ''
                               : _loading
-                                  ? 'РС‰РµРј РїСЂРѕРµРєС‚С‹ Cursor РЅР° РџРљвЂ¦'
-                                  : 'РџСЂРѕРµРєС‚РѕРІ РЅРµ РЅР°С€Р»РѕСЃСЊ.\nРћС‚РєСЂРѕР№С‚Рµ РїР°РїРєСѓ РІ Cursor РЅР° РџРљ.',
+                                  ? 'Ищем проекты Cursor на ПК…'
+                                  : 'Проектов не нашлось.\nОткройте папку в Cursor на ПК.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.65), height: 1.4),
                         ),

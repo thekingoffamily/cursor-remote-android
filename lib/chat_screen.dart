@@ -122,10 +122,17 @@ class _ChatScreenState extends State<ChatScreen> {
       _send({'type': 'history', 'project_id': widget.project.id});
 
   void _onEvent(dynamic event) {
-    if (event is! String) return;
+    final String rawText;
+    if (event is String) {
+      rawText = event;
+    } else if (event is List<int>) {
+      rawText = utf8.decode(event);
+    } else {
+      return;
+    }
     final Map<String, dynamic> j;
     try {
-      j = jsonDecode(event) as Map<String, dynamic>;
+      j = jsonDecode(rawText) as Map<String, dynamic>;
     } catch (_) {
       return;
     }
