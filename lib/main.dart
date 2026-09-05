@@ -597,15 +597,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       _ch = WebSocketChannel.connect(uri);
       _sub = _ch!.stream.listen(
         (event) {
-          final String rawText;
-          if (event is String) {
-            rawText = event;
-          } else if (event is List<int>) {
-            rawText = utf8.decode(event);
-          } else {
+          final Map<String, dynamic> j;
+          try {
+            final String rawText;
+            if (event is String) {
+              rawText = event;
+            } else if (event is List<int>) {
+              rawText = utf8.decode(event);
+            } else {
+              return;
+            }
+            final decoded = jsonDecode(rawText);
+            if (decoded is! Map) return;
+            j = Map<String, dynamic>.from(decoded);
+          } catch (_) {
+            // JPEG leftover from the old screen-share path — ignore
             return;
           }
-          final j = jsonDecode(rawText) as Map<String, dynamic>;
           final t = j['type'];
           if (t == 'denied') {
             setState(() {
