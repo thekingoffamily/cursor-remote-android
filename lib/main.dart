@@ -11,7 +11,7 @@ import 'chat_screen.dart';
 
 const String kMasterHttp = String.fromEnvironment(
   'MASTER_URL',
-  defaultValue: 'http://31.172.72.212:28471',
+  defaultValue: 'http://31.172.72.212',
 );
 
 String masterWsBase() {
