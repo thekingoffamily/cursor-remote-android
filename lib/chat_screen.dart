@@ -52,6 +52,103 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _connected = false;
 
   bool get _busy => _pendingReqId != null;
+  bool _askingPassword = false;
+
+  bool _needsSshPassword(String text) {
+    final t = text.toLowerCase();
+    return t.contains('нужен пароль') ||
+        t.contains('needs_auth') ||
+        t.contains('пароль для входа') ||
+        t.contains('authentication') && t.contains('failed');
+  }
+
+  Future<void> _askSshPassword({String? hint}) async {
+    if (_askingPassword || !widget.project.isSsh) return;
+    _askingPassword = true;
+    final ctrl = TextEditingController();
+    final who = widget.project.user.isEmpty
+        ? widget.project.host
+        : '${widget.project.user}@${widget.project.host}';
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Пароль SSH'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              hint ?? 'Вход $who — пароль только на ваш ПК, в чат не пишется.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.7),
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: ctrl,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Пароль'),
+              onSubmitted: (_) => Navigator.pop(ctx, true),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Войти')),
+        ],
+      ),
+    );
+    final password = ctrl.text;
+    ctrl.dispose();
+    _askingPassword = false;
+    if (ok != true || password.isEmpty || !mounted) return;
+
+    setState(() {
+      _messages.add(ChatMsg('system', 'Входим по SSH…'));
+    });
+    final uri = _api('/api/client/ssh_auth/${widget.serverId}');
+    try {
+      final r = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'req_id': _newReqId(),
+              'host': widget.project.host,
+              'user': widget.project.user,
+              'remote_path': widget.project.remotePath,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 45));
+      if (!mounted) return;
+      Map<String, dynamic> j = {};
+      try {
+        j = jsonDecode(r.body) as Map<String, dynamic>;
+      } catch (_) {}
+      final okLogin = j['ok'] == true;
+      final detail = (j['detail'] as String?) ?? (j['error'] as String?) ?? '';
+      setState(() {
+        _messages.add(
+          ChatMsg(
+            'system',
+            okLogin
+                ? 'SSH вошли. Можно писать задачу.'
+                : (detail.isEmpty ? 'Не вошли по SSH' : detail),
+          ),
+        );
+        if (okLogin) _connected = true;
+      });
+      _scrollToEnd();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _messages.add(ChatMsg('system', 'Не вошли: связь оборвалась')));
+    }
+  }
 
   @override
   void initState() {
@@ -108,11 +205,20 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       });
       _scrollToEnd();
+      if (widget.project.isSsh) {
+        final lastNeed = _messages.reversed
+            .map((m) => m.text)
+            .where(_needsSshPassword)
+            .firstOrNull;
+        if (lastNeed != null) {
+          await _askSshPassword();
+        }
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _connected = false;
-        _banner = 'Нет связи: $e';
+        _banner = 'Нет связи с ПК';
       });
     }
   }
@@ -195,6 +301,10 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       });
       _scrollToEnd();
+      final shown = err.isNotEmpty ? err : answer;
+      if (widget.project.isSsh && _needsSshPassword(shown)) {
+        await _askSshPassword();
+      }
     } catch (e) {
       if (!mounted || _pendingReqId != reqId) return;
       _failPending('$e');
@@ -306,6 +416,12 @@ class _ChatScreenState extends State<ChatScreen> {
               shape: BoxShape.circle,
             ),
           ),
+          if (p.isSsh)
+            IconButton(
+              tooltip: 'Пароль SSH',
+              onPressed: _busy ? null : () => _askSshPassword(),
+              icon: const Icon(Icons.key, size: 20),
+            ),
         ],
       ),
     );

@@ -14,7 +14,7 @@ const String kMasterHttp = String.fromEnvironment(
 );
 
 /// Baked into the UI so we can see which APK is actually installed.
-const String kAppVersion = '1.0.6';
+const String kAppVersion = '1.0.8';
 
 String masterWsBase() {
   if (kMasterHttp.startsWith('https://')) {
@@ -397,6 +397,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _refresh();
   }
 
+  Future<void> _setCursorKey(LicenseCardData card) async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ключ Cursor'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'API Key с cursor.com → Dashboard → Integrations.\n'
+              'Уйдёт на ваш ПК и сохранится там.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: ctrl,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Cursor API Key',
+                hintText: 'key_…',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Сохранить')),
+        ],
+      ),
+    );
+    final key = ctrl.text.trim();
+    ctrl.dispose();
+    if (ok != true || key.length < 20 || !mounted) return;
+
+    try {
+      final uri = Uri.parse('$kMasterHttp/api/client/api_key/${card.serverId}')
+          .replace(queryParameters: {'ct': card.clientToken});
+      final r = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'api_key': key}),
+          )
+          .timeout(const Duration(seconds: 35));
+      if (!mounted) return;
+      Map<String, dynamic> j = {};
+      try {
+        j = jsonDecode(r.body) as Map<String, dynamic>;
+      } catch (_) {}
+      final fine = j['ok'] == true;
+      final detail = (j['detail'] as String?) ?? (j['error'] as String?) ?? '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            fine
+                ? 'Ключ сохранён на ПК${(j['hint'] as String?)?.isNotEmpty == true ? ' (${j['hint']})' : ''}'
+                : (detail.isEmpty ? 'Не сохранили ключ' : detail),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Нет связи с ПК')),
+      );
+    }
+  }
+
   void _openSession(LicenseCardData card) {
     if (card.status == 'expired' || card.status == 'invalid') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -497,10 +572,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.65)),
                           ),
                           const SizedBox(height: 14),
-                          FilledButton.icon(
-                            onPressed: () => _openSession(c),
-                            icon: Icon(c.status == 'expired' ? Icons.payments : Icons.play_arrow),
-                            label: Text(c.status == 'expired' ? 'Продлить' : 'Подключиться'),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () => _setCursorKey(c),
+                                icon: const Icon(Icons.vpn_key_outlined, size: 18),
+                                label: const Text('Ключ Cursor'),
+                              ),
+                              FilledButton.icon(
+                                onPressed: () => _openSession(c),
+                                icon: Icon(c.status == 'expired' ? Icons.payments : Icons.play_arrow),
+                                label: Text(c.status == 'expired' ? 'Продлить' : 'Подключиться'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -610,7 +696,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       if (r.statusCode != 200) {
         setState(() {
           _loading = false;
-          _error = 'Сервер ${r.statusCode}\n$uri';
+          _error = 'Сервер ${r.statusCode} ($kAppVersion)';
         });
         return;
       }
@@ -632,7 +718,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Нет связи ($kAppVersion)\n$uri\n$e';
+        _error = 'Нет связи с ПК ($kAppVersion)';
       });
     }
   }
@@ -699,7 +785,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           _error != null
                               ? ''
                               : _loading
-                                  ? 'Ищем проекты… ($kAppVersion)\n$kMasterHttp'
+                                  ? 'Ищем проекты… ($kAppVersion)'
                                   : 'Проектов не нашлось.\nОткройте папку в Cursor на ПК.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.65), height: 1.4),
