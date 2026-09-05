@@ -3,10 +3,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import 'chat_screen.dart';
+import 'licenses_store.dart';
 
 const String kMasterHttp = String.fromEnvironment(
   'MASTER_URL',
@@ -14,7 +14,7 @@ const String kMasterHttp = String.fromEnvironment(
 );
 
 /// Baked into the UI so we can see which APK is actually installed.
-const String kAppVersion = '1.0.5';
+const String kAppVersion = '1.0.6';
 
 String masterWsBase() {
   if (kMasterHttp.startsWith('https://')) {
@@ -103,8 +103,6 @@ class BootScreen extends StatefulWidget {
 }
 
 class _BootScreenState extends State<BootScreen> {
-  final _storage = const FlutterSecureStorage();
-
   @override
   void initState() {
     super.initState();
@@ -112,7 +110,12 @@ class _BootScreenState extends State<BootScreen> {
   }
 
   Future<void> _boot() async {
-    final raw = await _storage.read(key: 'licenses_json');
+    String? raw;
+    try {
+      raw = await readLicensesJson().timeout(const Duration(seconds: 3));
+    } catch (_) {
+      raw = null;
+    }
     if (!mounted) return;
     if (raw != null && raw.isNotEmpty) {
       final decoded = jsonDecode(raw);
@@ -147,8 +150,20 @@ class _BootScreenState extends State<BootScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'CursorRemote $kAppVersion',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -181,7 +196,6 @@ class ConnectScreen extends StatefulWidget {
 
 class _ConnectScreenState extends State<ConnectScreen> {
   final _controller = TextEditingController();
-  final _storage = const FlutterSecureStorage();
   String? _error;
   bool _busy = false;
 
@@ -196,10 +210,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
       _error = null;
     });
     final card = LicenseCardData(serverId: parsed.serverId, clientToken: parsed.clientToken);
-    await _storage.write(
-      key: 'licenses_json',
-      value: jsonEncode([card.toJson()]),
-    );
+    await writeLicensesJson(jsonEncode([card.toJson()]));
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => DashboardScreen(initialCards: [card])),
@@ -316,7 +327,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final _storage = const FlutterSecureStorage();
   late List<LicenseCardData> _cards;
   Timer? _timer;
 
@@ -335,10 +345,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _persist() async {
-    await _storage.write(
-      key: 'licenses_json',
-      value: jsonEncode(_cards.map((e) => e.toJson()).toList()),
-    );
+    await writeLicensesJson(jsonEncode(_cards.map((e) => e.toJson()).toList()));
   }
 
   Future<void> _refresh() async {

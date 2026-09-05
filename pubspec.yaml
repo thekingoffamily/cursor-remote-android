@@ -1,7 +1,7 @@
 name: cursor_remote
 description: CursorRemote — remote control Cursor IDE from Android
 publish_to: "none"
-version: 1.0.5+6
+version: 1.0.6+7
 
 environment:
   sdk: ^3.7.2
@@ -10,9 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  flutter_secure_storage: ^9.2.4
   http: ^1.2.2
-  web_socket_channel: ^3.0.1
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
