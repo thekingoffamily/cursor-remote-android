@@ -13,6 +13,9 @@ const String kMasterHttp = String.fromEnvironment(
   defaultValue: 'http://31.172.72.212',
 );
 
+/// Baked into the UI so we can see which APK is actually installed.
+const String kAppVersion = '1.0.5';
+
 String masterWsBase() {
   if (kMasterHttp.startsWith('https://')) {
     return 'wss://${kMasterHttp.substring(8)}';
@@ -586,7 +589,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final uri = Uri.parse('$kMasterHttp/api/client/projects/${widget.serverId}')
         .replace(queryParameters: {'ct': widget.clientToken});
     try {
-      final r = await http.get(uri).timeout(const Duration(seconds: 50));
+      final r = await http
+          .get(uri, headers: {'User-Agent': 'CursorRemote/$kAppVersion'})
+          .timeout(const Duration(seconds: 25));
       if (!mounted) return;
       if (r.statusCode == 403) {
         setState(() {
@@ -598,7 +603,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       if (r.statusCode != 200) {
         setState(() {
           _loading = false;
-          _error = 'Сервер: ${r.statusCode}';
+          _error = 'Сервер ${r.statusCode}\n$uri';
         });
         return;
       }
@@ -620,7 +625,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Нет связи: $e';
+        _error = 'Нет связи ($kAppVersion)\n$uri\n$e';
       });
     }
   }
@@ -660,6 +665,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                       ),
                     ),
+                    Text(
+                      kAppVersion,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     IconButton(onPressed: _connect, icon: const Icon(Icons.refresh)),
                   ],
                 ),
@@ -679,7 +692,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           _error != null
                               ? ''
                               : _loading
-                                  ? 'Ищем проекты Cursor на ПК…'
+                                  ? 'Ищем проекты… ($kAppVersion)\n$kMasterHttp'
                                   : 'Проектов не нашлось.\nОткройте папку в Cursor на ПК.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.65), height: 1.4),
